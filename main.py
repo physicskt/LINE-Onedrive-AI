@@ -28,8 +28,7 @@ class LineOneDriveAIApp:
         
         # Validate configuration
         if not config.validate_config():
-            self.logger.error("Configuration validation failed. Exiting.")
-            sys.exit(1)
+            self.logger.warning("Configuration validation failed. Some features may not work.")
         
         self.logger.info("LINE BOT × OneDrive AI System starting...")
         
@@ -48,7 +47,6 @@ class LineOneDriveAIApp:
             self.logger.info("Logging system initialized")
         except Exception as e:
             print(f"Failed to setup logging: {e}")
-            sys.exit(1)
     
     def initialize_components(self):
         """Initialize all system components"""
@@ -69,7 +67,24 @@ class LineOneDriveAIApp:
             
         except Exception as e:
             log_error_with_traceback(self.logger, "Failed to initialize components", e)
-            sys.exit(1)
+    
+    def get_flask_app(self):
+        """Get Flask app for WSGI deployment"""
+        if self.line_bot_handler and hasattr(self.line_bot_handler, 'app'):
+            return self.line_bot_handler.app
+        else:
+            # Create a minimal Flask app if LINE Bot handler is not available
+            try:
+                from flask import Flask
+                app = Flask(__name__)
+                
+                @app.route('/health')
+                def health():
+                    return {"status": "ok", "service": "LINE Bot OneDrive AI"}
+                
+                return app
+            except ImportError:
+                return None
     
     def run(self):
         """Run the main application"""
@@ -77,7 +92,14 @@ class LineOneDriveAIApp:
             self.logger.info(f"Starting application on port {config.PORT}")
             
             # Start the web server for LINE webhook
-            self.line_bot_handler.start_server(port=config.PORT)
+            if self.line_bot_handler:
+                self.line_bot_handler.start_server(port=config.PORT)
+            else:
+                self.logger.warning("LINE Bot handler not available. Running in minimal mode.")
+                # Keep the process alive
+                import time
+                while True:
+                    time.sleep(1)
             
         except KeyboardInterrupt:
             self.logger.info("Application stopped by user")
@@ -104,11 +126,17 @@ class LineOneDriveAIApp:
             log_error_with_traceback(self.logger, "Error during shutdown", e)
 
 
+# Global application instance
+app_instance = LineOneDriveAIApp()
+
+# Flask app for WSGI deployment (used by gunicorn)
+app = app_instance.get_flask_app()
+
+
 def main():
     """Main entry point"""
     try:
-        app = LineOneDriveAIApp()
-        app.run()
+        app_instance.run()
     except Exception as e:
         # Emergency logging if main setup fails
         print(f"Critical error: {e}")

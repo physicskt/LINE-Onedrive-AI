@@ -3,7 +3,13 @@ OneDrive client for Microsoft Graph API integration
 """
 import logging
 from typing import Optional, Dict, Any
-import requests
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
 from config import config
 from modules.utils.logger import log_error_with_traceback, StructuredLogger
 
@@ -14,6 +20,10 @@ class OneDriveClient:
     def __init__(self):
         """Initialize OneDrive client"""
         self.logger = StructuredLogger(__name__)
+        
+        if not REQUESTS_AVAILABLE:
+            self.logger.warning("Requests library not available. Install requirements.txt to enable OneDrive functionality.")
+            return
         
         # Validate Microsoft Graph configuration
         if not all([
@@ -35,6 +45,10 @@ class OneDriveClient:
         Returns:
             True if authentication successful, False otherwise
         """
+        if not REQUESTS_AVAILABLE:
+            self.logger.warning("Cannot authenticate: requests library not available")
+            return False
+            
         try:
             # TODO: Implement proper OAuth2 flow for production
             # For now, this is a placeholder for client credentials flow
@@ -81,6 +95,10 @@ class OneDriveClient:
         Returns:
             Upload response or None if failed
         """
+        if not REQUESTS_AVAILABLE:
+            self.logger.warning(f"Cannot upload file '{file_name}': requests library not available")
+            return None
+            
         try:
             if not self.access_token:
                 if not self.authenticate():
@@ -132,6 +150,10 @@ class OneDriveClient:
         Returns:
             Folder creation response or None if failed
         """
+        if not REQUESTS_AVAILABLE:
+            self.logger.warning(f"Cannot create folder '{folder_name}': requests library not available")
+            return None
+            
         try:
             if not self.access_token:
                 if not self.authenticate():
@@ -186,6 +208,10 @@ class OneDriveClient:
         Returns:
             List of files or None if failed
         """
+        if not REQUESTS_AVAILABLE:
+            self.logger.warning("Cannot list files: requests library not available")
+            return None
+            
         try:
             if not self.access_token:
                 if not self.authenticate():

@@ -5,10 +5,14 @@ import os
 import logging
 from pathlib import Path
 from typing import Optional
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Try to load environment variables from .env file if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # Continue without dotenv if not available
+    pass
 
 class Config:
     """Application configuration class"""

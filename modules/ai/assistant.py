@@ -3,7 +3,13 @@ AI Assistant for receipt reading and invoice generation
 """
 import logging
 from typing import Optional, Dict, Any, List
-import openai
+
+try:
+    import openai
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+
 from config import config
 from modules.utils.logger import log_error_with_traceback, StructuredLogger
 
@@ -14,6 +20,10 @@ class AIAssistant:
     def __init__(self):
         """Initialize AI Assistant"""
         self.logger = StructuredLogger(__name__)
+        
+        if not OPENAI_AVAILABLE:
+            self.logger.warning("OpenAI library not available. Install requirements.txt to enable AI functionality.")
+            return
         
         # Validate OpenAI configuration
         if not config.OPENAI_API_KEY:
@@ -33,6 +43,10 @@ class AIAssistant:
         Returns:
             Analysis result with extracted information
         """
+        if not OPENAI_AVAILABLE:
+            self.logger.warning("Cannot analyze receipt: OpenAI library not available")
+            return None
+            
         try:
             if not config.OPENAI_API_KEY:
                 self.logger.error("OpenAI API key not configured")
@@ -115,6 +129,10 @@ class AIAssistant:
         Returns:
             Generated invoice content or None if failed
         """
+        if not OPENAI_AVAILABLE:
+            self.logger.warning("Cannot generate invoice: OpenAI library not available")
+            return None
+            
         try:
             if not config.OPENAI_API_KEY:
                 self.logger.error("OpenAI API key not configured")
